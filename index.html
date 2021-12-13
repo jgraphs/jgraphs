@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<link href="https://fonts.googleapis.com/css?family=Abril+Fatface|Anton|Big+Shoulders+Display|Heebo|Mansalva|Montserrat|Notable|Open+Sans+Condensed:300|Quicksand|Roboto&display=swap" rel="stylesheet">
+<script src="https://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+<script>sagecell.makeSagecell({"inputLocation": ".sage"});</script>
+<html>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<head>
+		
+		<title>
+			JGraphs
+		</title>
+		
+		<STYLE type="text/css">
+			
+			body {
+				background-color: rgb(60, 59, 59);
+			}
+			
+			H1 {
+				text-align: center;
+				font-family: 'Quicksand', sans-serif;
+				color: whitesmoke;
+			}
+			
+			#header {
+				width: 100%;
+				height: 60px;
+			}
+			#lefthead {
+				width: 10%;
+			}
+			#centerhead {
+				width: 40%;
+				text-align: center;
+				font-family: 'Montserrat', sans-serif;
+				color: black;
+				font-size: 50px;
+			}
+			#righthead {
+				width: 50%;
+			}
+			li.navigation {
+				font-family: 'Quicksand', sans-serif;	
+				font-size: 30px;
+			}
+			div.ex1 {
+				background-color: #000000;
+			}
+			div.ex2 {
+				margin: 0px 0px 20px 30px;
+				text-align: justify; 
+				font-family: 'Quicksand', sans-serif;
+				color: rgb(230, 230, 230);
+				font-size: 15px;
+			}
+			div.ex3 {
+				margin: 100px 100px 100px 100px;
+				text-align: right; 
+				font-family: 'Mansalva';
+				color: black;
+				font-size: 15px;
+			}
+			ul#horizontal-list  {
+				min-width: 70px;
+				list: none;
+				color: black;
+				align: center;
+				position: center;
+				font-size: 30px;
+			}
+			ul#horizontal-list li {
+				display: inline;
+				margin: auto;
+			}
+			
+			#home.active, #contract.active{
+				font-family: 'Quicksand', sans-serif;
+				font-size: 30px;
+				background-color : white;
+				padding: 5px;
+				-webkit-appearance: button;
+				-moz-appearance: button;
+				appearance: button;
+			}
+
+			a { 
+				color: inherit; 
+			}
+
+			iframe{
+				border: none;
+				margin: none;
+				line-height: 0;
+				display:inline-block;
+				display:block
+			}
+
+			/* Tooltip container */
+			.tooltip {
+				margin: 0px 0px 0px 30px;
+				font-family: 'Quicksand', sans-serif;
+				color: rgb(230, 230, 230);
+				font-size: 15px;
+				position: relative;
+				display: inline-block;
+				/*border-bottom: 1px dotted black; /* If you want dots under the hoverable text */
+			}
+
+			/* Tooltip text */
+			.tooltip .tooltiptext {
+			visibility: hidden;
+			width: 420px;
+			background-color: #555;
+			color: #fff;
+			text-align: left;
+			padding: 10px 10px 10px 20px;
+			border-radius: 6px;
+
+			/* Position the tooltip text */
+			position: absolute;
+			z-index: 1;
+			bottom: -545%;
+			left: 0%;
+			margin-left: 10px;
+
+			/* Fade in tooltip */
+			opacity: 0;
+			transition: opacity 0.3s;
+			}
+
+			/* Tooltip arrow */
+			.tooltip .tooltiptext::after {
+			content: " ";
+			position: absolute;
+			bottom: 100%;  /* At the top of the tooltip */
+			left: 10%;
+			margin-left: -5px;
+			border-width: 5px;
+			border-style: solid;
+			border-color: transparent transparent #555 transparent;
+			}
+
+			/* Show the tooltip text when you mouse over the tooltip container */
+			.tooltip:hover .tooltiptext {
+			visibility: visible;
+			opacity: 1;
+			}
+
+			/* Tooltip text */
+			.tooltip .tooltiptext1 {
+			visibility: hidden;
+			width: 200px;
+			background-color: #555;
+			color: #fff;
+			text-align: center;
+			padding: 10px 10px 10px 10px;
+			border-radius: 6px;
+
+			/* Position the tooltip text */
+			position: absolute;
+			z-index: 1;
+			bottom: -300%;
+			left: 20%;
+			margin-left: -60px;
+
+			/* Fade in tooltip */
+			opacity: 0;
+			transition: opacity 0.3s;
+			}
+
+			/* Tooltip arrow */
+			.tooltip .tooltiptext1::after {
+			content: " ";
+			position: absolute;
+			bottom: 100%;  /* At the top of the tooltip */
+			left: 35%;
+			margin-left: -5px;
+			border-width: 5px;
+			border-style: solid;
+			border-color: transparent transparent #555 transparent;
+			}
+
+			/* Show the tooltip text when you mouse over the tooltip container */
+			.tooltip:hover .tooltiptext1 {
+			visibility: visible;
+			opacity: 1;
+			}
+
+		</STYLE>
+	</head>
+	<body>
+		
+		
+
+		<div class="ex2" >
+			<H1> JGraphs </H1>
+		</div>
+		<div class="ex1">
+			<div class="tooltip">
+				<p> Instructions</p>
+				<span class="tooltiptext">
+					- double click on canvas to add a new vertex<br>
+					- double click on a vertex to delete or add an existing vertex<br>
+					- vertices with no color are considered deleted<br>
+					- vertices are draggable<br>
+					- click on two vertices to add or delete an edge<br>
+					- type "Kn" to draw a complete graph on n vertices<br>
+					- type "Cn" to draw a cycle graph on n vertices<br>
+					- type "Tn" to draw a trivial graph on n vertices<br>
+					- type "Pn" to draw a path graph on n vertices<br>
+					- type "toLatex" to export the graph to LaTeX via Tikz<br>
+					- type "toSage" to export the graph to SageMath<br>
+					- type "toM2" to export the graph to Macaulay2<br>
+					- type "toR" to export the graph to R<br>
+				</span>
+			</div>
+	
+			<div class="tooltip">
+				<p> Settings</p>
+				<span class="tooltiptext1">
+					vertex size:
+					<div class="slidecontainer">
+						<input type="range" min="5" max="20" value="0" class="slider" id="vertexSize">
+					</div>
+					edge width:
+					<div class="slidecontainer">
+						<input type="range" min="2" max="8" value="0" class="slider" id="edgeWidth">
+					</div>
+					text size:
+					<div class="slidecontainer">
+						<input type="range" min="10" max="40" value="0" class="slider" id="textSize">
+					</div>
+				</span>
+				
+			</div>
+		</div>
+		
+			
+		<div class="ex2" >
+			<H2> Input</H2>
+			<input id="graphinput" name="graphinput" size="100" style="font-size: 15px" class="search" onkeydown="textinput(this)">
+			</input>
+			<H2> Canvas</H2>
+		</div>
+
+		<canvas id="myCanvas" width="1000" height="600" style="border:2px solid #000000;"></canvas>
+		<script language="javascript" type="text/javascript" src="JGraphs.js"></script>
+
+		<div class="ex2" >
+			<H2> Output</H2>
+			<textarea id="graphoutput" name="graphoutput" style="font-size: 15px" rows="10" cols="100">
+			</textarea>
+		</div>
+
+		<div class="ex2" >
+			<H2> SageMath Cell </H2>
+		</div>
+
+		<div class="sage" style="background-color:white">
+			<script id="sagemath" type="text/x-sage" >
+			
+			</script>
+		</div>
+
+		<div class="ex2" >
+			<H2> <a href="https://www.unimelb-macaulay2.cloud.edu.au/#home"  target="_blank">Link to Macaulay2</a> </H2>
+		</div>
+
+	</body>
+</html>
