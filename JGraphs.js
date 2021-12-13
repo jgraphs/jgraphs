@@ -1,0 +1,578 @@
+//track mouse position on mousemove
+var mousePosition;
+
+//track state of mousedown and up
+var isMouseDown;
+
+//reference to the canvas element
+var c = document.getElementById("myCanvas");
+
+//reference to 2d context
+var ctx = c.getContext("2d");
+ctx.font = "10px Arial";
+ctx.lineWidth = 2;
+ctx.strokeStyle = "white";
+
+var vS = document.getElementById("vertexSize");
+var eW = document.getElementById("edgeWidth");
+var tS = document.getElementById("textSize");
+
+var vertexsize = 5;
+var nVertices = 0;
+
+var addingEdge = {
+    intento: -1,
+    head: -1,
+    tail: -1
+};
+
+//add listeners
+let timer
+document.addEventListener('click', event => {
+  if (event.detail === 1) {
+    timer = setTimeout(() => {
+    }, 250)
+  }
+})
+document.addEventListener('dblclick', event => {
+  clearTimeout(timer)
+  console.log('dblclick')
+})
+document.addEventListener('mousemove', move, false);
+document.addEventListener('mousedown', setDraggable, false);
+document.addEventListener('mouseup', setDraggable, false);
+document.addEventListener('dblclick', addVertex, false);
+vS.addEventListener('input', updateVertexSize, false);
+tS.addEventListener('input', updateTextSize, false);
+eW.addEventListener('input', updateEdgeWidth, false);
+
+
+//make a collection of circles
+var circles = [];
+var edges = [];
+var removedEdges = [];
+
+function updateVertexSize() {
+    vertexsize = vS.value;
+    draw()
+}
+
+function updateEdgeWidth() {
+    ctx.lineWidth = eW.value;
+    draw()
+}
+
+function updateTextSize() {
+    ctx.font = tS.value.toString() + "px Arial";
+    draw()
+}
+
+//input as text
+function textinput(e) {
+    if(event.key === 'Enter') {
+        var text = document.getElementById("graphinput").value;
+
+        if(text[0] == 'P') {
+            //alert("The value of the input field was changed to " + text);
+            var n = parseInt(text.substring(1,text.length));
+
+            for ( var i = 0; i < n; i++ ){
+                var cx = c.width/2 - ( 200 * Math.cos( ( 2 * Math.PI * i ) / n ) );
+                var cy = c.height/2 + ( 200 * Math.sin( ( 2 * Math.PI * i ) / n ) );
+                
+                var auxc = new Circle(cx, cy, "red", nVertices++);
+
+                circles.push(auxc);
+
+                if (i > 0){
+                    edges.push([nVertices-2,nVertices-1]);
+                }
+            }
+            draw();
+        } else if (text[0] == 'C') {
+            var n = parseInt(text.substring(1,text.length));
+
+            for ( var i = 0; i < n; i++ ){
+                var cx = c.width/2 - ( 200 * Math.cos( ( 2 * Math.PI * i ) / n ) );
+                var cy = c.height/2 + ( 200 * Math.sin( ( 2 * Math.PI * i ) / n ) );
+                
+                var auxc = new Circle(cx, cy, "red", nVertices++);
+
+                circles.push(auxc);
+
+                if (i > 0){
+                    edges.push([nVertices-2,nVertices-1]);
+                }
+                if (i == n-1){
+                    edges.push([nVertices-n,nVertices-1]);
+                }
+            }
+            draw();
+        } else if (text[0] == 'K') {
+            var n = parseInt(text.substring(1,text.length));
+            var nVerticesinicial = nVertices;
+
+            for ( var i = 0; i < n; i++ ){
+                var cx = c.width/2 - ( 200 * Math.cos( ( 2 * Math.PI * i ) / n ) );
+                var cy = c.height/2 + ( 200 * Math.sin( ( 2 * Math.PI * i ) / n ) );
+                
+                var auxc = new Circle(cx, cy, "red", nVertices++);
+
+                circles.push(auxc);
+
+                for ( var j = i + 1; j < n; j ++){
+                    edges.push([nVertices - 1, nVerticesinicial + j ]);
+                }
+                
+            }
+            draw();
+        } else if (text[0] == 'T') {
+            var n = parseInt(text.substring(1,text.length));
+
+            for ( var i = 0; i < n; i++ ){
+                var cx = c.width/2 - ( 200 * Math.cos( ( 2 * Math.PI * i ) / n ) );
+                var cy = c.height/2 + ( 200 * Math.sin( ( 2 * Math.PI * i ) / n ) );
+                
+                var auxc = new Circle(cx, cy, "red", nVertices++);
+
+                circles.push(auxc);
+                
+            }
+            draw();
+        } else if (text == 'toLatex') {
+            var cx = c.width/2;
+            var cy = c.height/2;
+
+            var cadena = "\\documentclass[11pt,twoside]{amsart}\n";
+            cadena = cadena + "\\usepackage{tikz}\n";
+            cadena = cadena + "\\begin{document}\n";
+            cadena = cadena + "	\\begin{center}\n";
+            cadena = cadena + "		\\begin{tikzpicture}[scale=2,thick]\n";
+            cadena = cadena + "		\\tikzstyle{every node}=[minimum width=0pt, inner sep=2pt, circle]\n";
+
+            for ( var i = 0; i < circles.length; i++ ) {
+                if( circles[i].vivo){
+                    cadena = cadena + "			\\draw (" + ((circles[i].x - cx)/100) + "," + ((cy - circles[i].y)/100) + ") node[draw] (" + i + ") { \\tiny " + i + "};\n";
+                }
+            }
+
+            for ( var i = 0; i < edges.length; i++) {
+                if ( circles[edges[i][0]].vivo && circles[edges[i][1]].vivo ) {
+                    cadena = cadena + "			\\draw  (" + (edges[i][0]) + ") edge (" + (edges[i][1]) + ");\n";
+                }
+            }
+            cadena = cadena + "		\\end{tikzpicture}\n";
+            cadena = cadena + "	\\end{center}\n";
+            cadena = cadena + "\\end{document}\n";
+
+            document.getElementById("graphoutput").textContent=cadena;
+        } else if (text == 'toSage') {
+            document.getElementById("graphoutput").textContent="g=Graph(" + graph2string() +")";
+        } else if (text == 'toR') {
+            document.getElementById("graphoutput").textContent="library(igraph)\ng <- graph.formula(" + graph2Rstring() +")";
+        } else if (text == 'toM2') {
+            document.getElementById("graphoutput").textContent="loadPackage \"Graphs\"\nG = graph(" + graph2M2string() +")";
+        } else if (text == 'computeFM') {
+            var cadena = "# Forbidden graphs form MZ <= 3\n";
+            cadena = cadena + "min_forbid5=[Graph('DBg', name = 'P5')]\n";
+            cadena = cadena + "min_forbid6=[Graph('E?NG', name = 'E?NG'),\n";
+            cadena = cadena + " Graph('E@JW', name = 'E@JW'),\n";
+            cadena = cadena + " Graph('E?NW', name = 'E?NW'),\n";
+            cadena = cadena + " Graph('E?Nw', name = 'E?Nw'),\n";
+            cadena = cadena + " Graph('E?]w', name = 'E?]w'),\n";
+            cadena = cadena + " Graph('E@`w', name = 'E@`w'),\n";
+            cadena = cadena + " Graph('E@YW', name = 'E@YW'),\n";
+            cadena = cadena + " Graph('E@UW', name = 'E@UW'),\n";
+            cadena = cadena + " Graph('EGNW', name = 'EGNW'),\n";
+            cadena = cadena + " Graph('EAMw', name = 'EAMw'),\n";
+            cadena = cadena + " Graph('E@Vw', name = 'E@Vw'),\n";
+            cadena = cadena + " Graph('ECXw', name = 'ECXw'),\n";
+            cadena = cadena + " Graph('E@^W', name = 'E@^W'),\n";
+            cadena = cadena + " Graph('EJeg', name = 'EJeg'),\n";
+            cadena = cadena + " Graph('EK]w', name = 'EK]w')]\n";
+            cadena = cadena + "min_forbid7=[Graph('F?Cfw', name ='F?Cfw'),\n";
+            cadena = cadena + " Graph('F?D~o', name ='F?D~o'),\n";
+            cadena = cadena + " Graph('F?D~w', name ='F?D~w')]\n";
+            cadena = cadena + "\n";
+            cadena = cadena +  "D = Graph(" + graph2string() + ")\n";
+            cadena = cadena + "\n";
+            cadena = cadena + "n = len(D)\n";
+            cadena = cadena + "\n";
+            cadena = cadena + "def FiveVertices(L):\n";
+            cadena = cadena + "	subD = D.subgraph(L)\n";
+            cadena = cadena + "	for F in min_forbid5:\n";
+            cadena = cadena + "		if(subD.is_isomorphic(F)):\n";
+            cadena = cadena + "			print('Forbidden graph since contains ' + F.name() + ', with indices ' + str(L) + '\\n')\n";
+            cadena = cadena + "			F.show()\n";
+            cadena = cadena + "			return True\n";
+            cadena = cadena + "	return False\n";
+            cadena = cadena + "\n";
+            cadena = cadena + "def SixVertices(L):\n";
+            cadena = cadena + "	subD = D.subgraph(L)\n";
+            cadena = cadena + "	for F in min_forbid6:\n";
+            cadena = cadena + "		if(subD.is_isomorphic(F)):\n";
+            cadena = cadena + "			print('Forbidden graph since contains ' + F.name() + ', with indices ' + str(L) + '\\n')\n";
+            cadena = cadena + "			F.show()\n";
+            cadena = cadena + "			return True\n";
+            cadena = cadena + "	for l in L:\n";
+            cadena = cadena + "		L1 = list(L)\n";
+            cadena = cadena + "		L1.remove(l)\n";
+            cadena = cadena + "		if(FiveVertices(L1)):\n";
+            cadena = cadena + "			return True\n";
+            cadena = cadena + "		return False\n";
+            cadena = cadena + "\n";
+            cadena = cadena + "def SevenVertices(L):\n";
+            cadena = cadena + "	subD = D.subgraph(L)\n";
+            cadena = cadena + "	for F in min_forbid7:\n";
+            cadena = cadena + "		if(subD.is_isomorphic(F)):\n";
+            cadena = cadena + "			print('Forbidden graph since contains ' + F.name() + ', with indices ' + str(L) + '\\n')\n";
+            cadena = cadena + "			F.show()\n";
+            cadena = cadena + "			return True\n";
+            cadena = cadena + "	for l in L:\n";
+            cadena = cadena + "		L1 = list(L)\n";
+            cadena = cadena + "		L1.remove(l)\n";
+            cadena = cadena + "		if(SixVertices(L1)):\n";
+            cadena = cadena + "			return True\n";
+            cadena = cadena + "	return False\n";
+            cadena = cadena + "\n";
+            cadena = cadena + "def MoreThanSevenVertices(L):\n";
+            cadena = cadena + "	subD = D.subgraph(L)\n";
+            cadena = cadena + "	if(len(L) == 8):\n";
+            cadena = cadena + "		for l in L:\n";
+            cadena = cadena + "			L1 = list(L)\n";
+            cadena = cadena + "			L1.remove(l)\n";
+            cadena = cadena + "			if(SevenVertices(L1)):\n";
+            cadena = cadena + "				return True\n";
+            cadena = cadena + "	else:\n";
+            cadena = cadena + "		for l in L:\n";
+            cadena = cadena + "			L1 = list(L)\n";
+            cadena = cadena + "			L1.remove(l)\n";
+            cadena = cadena + "			if(MoreThanSevenVertices(L1)):\n";
+            cadena = cadena + "				return True\n";
+            cadena = cadena + "	print('Something goes wrong! mz >= 4, but no graph in Forbbiden set is induced subgraph of graph.\\n')\n";
+            cadena = cadena + "	if(D.subgraph(L).is_connected()):\n";
+            cadena = cadena + "		print('Vertices ' + str(L) + ' induce a connected graph\\n')\n";
+            cadena = cadena + "	else:\n";
+            cadena = cadena + "		print('Vertices ' + str(L) + ' induce a disconnected graph\\n')\n";
+            cadena = cadena + "	return False\n";
+            cadena = cadena + "\n";
+            cadena = cadena + "def Forb():\n";
+            cadena = cadena + "	if(n == 5):\n";
+            cadena = cadena + "		if(FiveVertices(range(n)) == False):\n";
+            cadena = cadena + "			print('The graph has mz < 4.\\n')\n";
+            cadena = cadena + "	elif(n == 6):\n";
+            cadena = cadena + "		if(SixVertices(range(n)) == False):\n";
+            cadena = cadena + "			print('The graph has mz < 4.\\n')\n";
+            cadena = cadena + "	elif(n == 7):\n";
+            cadena = cadena + "		if(SevenVertices(range(n)) == False):\n";
+            cadena = cadena + "			print('The graph has mz < 4.\\n')\n";
+            cadena = cadena + "	elif(n > 7):\n";
+            cadena = cadena + "		if(MoreThanSevenVertices(range(n)) == False):\n";
+            cadena = cadena + "			print('The graph has mz < 4.\\n')\n";
+            cadena = cadena + "	else:\n";
+            cadena = cadena + "		print('The graph has mz < 4, because it is too small.\\n')\n";
+            cadena = cadena + "\n";
+            cadena = cadena + "Forb()\n";
+
+            document.getElementById("graphoutput").textContent=cadena;
+        }
+        
+    }
+}
+
+function graph2string() {
+    var graph = "{";
+    
+    var adyacencias = [];
+    adyacencias.length = circles.length;
+    
+    for (var i = 0; i < circles.length; i++) {
+        adyacencias[i] = "";
+    }
+
+    for ( var i = 0; i < edges.length; i++ ) {
+        if ( circles[edges[i][1]].vivo ){
+            if ( adyacencias[edges[i][0]].length > 0 ){
+                adyacencias[edges[i][0]] = adyacencias[edges[i][0]] + ","
+            }
+            adyacencias[edges[i][0]] = adyacencias[edges[i][0]] + edges[i][1].toString(); 
+        }
+    }
+
+    for (var i = 0; i < circles.length; i++) {
+        if ( circles[i].vivo ){
+            if (graph[graph.length-1] == "]") {
+                graph = graph + ",";
+            }
+            if ( adyacencias[i].length > 0 ) {
+                graph = graph + i.toString() + ":[" + adyacencias[i] + "]";
+            } else {
+                graph = graph + i.toString() + ":[]";
+            }
+        }
+    }
+    graph = graph + "}";
+    return graph
+}
+
+function graph2Rstring() {
+    var graph = "";
+
+    for ( var i = 0; i < edges.length; i++ ) {
+        if ( circles[edges[i][0]].vivo && circles[edges[i][1]].vivo ){
+            if ( graph.length > 0 ) {
+                graph = graph + ","
+            }
+            graph = graph + edges[i][0] + "-" + edges[i][1];
+        }
+    }
+    
+    return graph
+}
+
+function graph2M2string() {
+    var graph = "{";
+    
+    var singletons = Array.from({length: circles.length}, (_, i) => 1);
+
+    for (var i = 0; i < edges.length; i++) {
+        if ( circles[edges[i][0]].vivo && circles[edges[i][1]].vivo ){
+            if (graph[graph.length-1] == "}") {
+                graph = graph + ",";
+            }
+            graph = graph + "{" + edges[i][0].toString() + "," + edges[i][1] + "}";
+            singletons[edges[i][0]] = 0;
+            singletons[edges[i][1]] = 0;
+        }
+    }
+
+    graph = graph + "}";
+
+    for (var i = 0; i < circles.length; i++) {
+        if ( circles[i].vivo == true && singletons[i] == 1 ) {
+            if (graph[graph.length-1] == "}") {
+                graph = graph + ", Singletons => {";
+            } else if ( Number(graph[graph.length-1]) > -1 ) {
+                console.log(graph[graph.length-1]);
+                graph = graph + ",";
+            }
+            graph = graph + i.toString();
+        }
+    }
+    if ( graph[graph.length-1] != "}" ) {
+        graph = graph + "}";
+    }
+    
+    return graph
+}
+
+//add vertex
+function addVertex(e){
+    getMousePosition(e);
+    if ( mousePosition.x >= 0 && mousePosition.x <= c.width && mousePosition.y >= 0 && mousePosition.y <= c.height) {
+
+        removeVertex = -1;
+        for (var i = 0; i < circles.length; i++) {
+            if (intersects(circles[i])) {
+                removeVertex = i;
+                break;
+            }
+        }
+        if (removeVertex > -1) {
+            if ( circles[i].vivo ) {
+                circles[i].vivo = false;
+                draw();
+            } else {
+                circles[i].vivo = true;
+                draw()
+            }
+            
+        } else {
+            var auxc = new Circle(mousePosition.x, mousePosition.y, "red", nVertices++);
+            circles.push(auxc);
+            draw();
+        }
+        
+    }
+    
+}
+
+//main draw method
+function draw() {
+    //clear canvas
+    ctx.clearRect(0, 0, c.width, c.height);
+    
+    drawEdges();
+    drawCircles();
+    
+}
+
+//draw edges
+function drawEdges() {
+    for ( var i = edges.length - 1; i >= 0 ; i--) {
+        if ( circles[edges[i][0]].vivo && circles[edges[i][1]].vivo ){
+            head = edges[i][0];
+            tail = edges[i][1];
+            ctx.beginPath();
+            ctx.moveTo(circles[head].x, circles[head].y);
+            ctx.lineTo(circles[tail].x, circles[tail].y);
+            ctx.stroke();
+        }
+    }
+}
+
+
+//draw circles
+function drawCircles() {
+    for (var i = circles.length - 1; i >= 0; i--) {
+        circles[i].draw();
+    }
+}
+
+//key track of circle focus and focused index
+var focused = {
+   key: 0,
+   state: false
+}
+
+//circle Object
+function Circle(x, y, fill, indice) {
+    this.startingAngle = 0;
+    this.endAngle = 2 * Math.PI;
+    this.x = x;
+    this.y = y;
+    this.indice = indice;
+    this.fill = fill;
+    this.vivo = true;
+
+    this.draw = function () {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, vertexsize, this.startingAngle, this.endAngle);
+        if(this.vivo){
+            ctx.fillStyle = this.fill;
+            ctx.fill();
+        }
+        ctx.stroke();
+        ctx.fillStyle = "white";
+        ctx.fillText(this.indice.toString(), this.x, this.y - 10 - vertexsize + 5);
+    }
+}
+
+function move(e) {
+
+    if (!isMouseDown) {
+        return;
+    }
+
+    getMousePosition(e);
+
+    //if any circle is focused
+    if (focused.state) {
+        circles[focused.key].x = mousePosition.x;
+        circles[focused.key].y = mousePosition.y;
+        draw();
+        return;
+    }
+
+    //no circle currently focused check if circle is hovered
+    for (var i = 0; i < circles.length; i++) {
+        if (intersects(circles[i])) {
+            focused.key = i;
+            focused.state = true;
+            break;
+        }
+    }
+    draw();
+}
+
+//set mousedown state
+function setDraggable(e) {
+    var t = e.type;
+    if (t === "mousedown") {
+        isMouseDown = true;
+    } else if (t === "mouseup") {
+        if (focused.state  == false){
+
+            getMousePosition(e);
+
+            if (addingEdge.intento == -1){
+                addingEdge.head = -1;
+                addingEdge.tail = -1;
+            }
+
+            for (var i = 0; i < circles.length; i++) {
+                if (circles[i].vivo && i != addingEdge.head && intersects(circles[i])) {
+                    if (addingEdge.intento == -1){
+                        addingEdge.head = i;
+                        circles[addingEdge.head].fill = "green";
+                        draw()
+                    } else {
+                        addingEdge.tail = i;
+                    }
+                    break;
+                }
+            }
+
+            if (addingEdge.intento == 1 && addingEdge.tail == -1) {
+                circles[addingEdge.head].fill = "red";
+                draw();
+                addingEdge.intento = -1;
+            } else if (addingEdge.tail > -1) {
+
+                addingEdge.intento = -1;
+
+                var mayor = addingEdge.head > addingEdge.tail? addingEdge.head : addingEdge.tail;
+                var menor = addingEdge.tail > addingEdge.head? addingEdge.head : addingEdge.tail;
+
+                var auxindex = edges.indexOf([menor,mayor]);
+
+                for ( var i = 0; i < edges.length; i++ ){
+                    if ( edges[i][0] == menor && edges[i][1] == mayor ){
+                        auxindex = i;
+                        break;
+                    }
+                }
+
+                console.log("indices: " + menor + "," + mayor + ", indice encontrado: " + auxindex);
+
+                if ( auxindex > -1 ) {
+                    edges.splice(auxindex,1);
+                } else {
+                    edges.push([menor,mayor]);
+                }
+
+                circles[addingEdge.head].fill = "red";
+                draw();
+                
+            } else if (addingEdge.head > -1){
+                addingEdge.intento = 1;
+            } else {
+                addingEdge.intento = -1;
+            }
+
+            console.log("intento: " + addingEdge.intento.toString() + ", head: " + addingEdge.head.toString() + ", tail: " + addingEdge.tail.toString() );
+        }
+        isMouseDown = false;
+        releaseFocus();
+    }
+}
+
+function releaseFocus() {
+    focused.state = false;
+}
+
+function getMousePosition(e) {
+    var rect = c.getBoundingClientRect();
+    mousePosition = {
+        x: Math.round(e.x - rect.left),
+        y: Math.round(e.y - rect.top)
+    }
+}
+
+//detects whether the mouse cursor is between x and y relative to the radius specified
+function intersects(circle) {
+    
+    return (Math.abs(mousePosition.x - circle.x) <= vertexsize) &&  (Math.abs(mousePosition.y - circle.y) <= vertexsize)
+}
+
+draw();
